@@ -1,7 +1,9 @@
-# GitHub Codespaces ♥️ Jupyter Notebooks
+# Labelled issues
 
-Welcome to your shiny new codespace! We've got everything fired up and running for you to explore Python and Jupyter notebooks.
+This repository contains a Jupyter Notebook and Python Script that will allow you to:
 
-You've got a blank canvas to work on from a git perspective as well. There's a single initial commit with what you're seeing right now - where you go from here is up to you!
+1. Count issues that have been applied a specific lable week on week, for a number of weeks that you choose.
+2. List out some data about each labelled issue, like Title, URL and person that labelled the issue.
 
-Everything you do here is contained within this one codespace. There is no repository on GitHub yet. If and when you’re ready you can click "Publish Branch" and we’ll create your repository and push up your project. If you were just exploring then and have no further need for this code then you can simply delete your codespace and it's gone forever.
+This is particularly useful if you use a specific label to triage issues e.g. "triaged". You can then see how many issues were triaged week on week and by whom.
+
