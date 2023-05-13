@@ -1,0 +1,7 @@
+[DEFAULT]
+RepoOwner = REPO_OWNER
+RepoName = REPO_NAME
+AccessToken = YOUR_GITHUB_ACCESS_TOKEN
+; Replace N with the number of weeks you want to check, 0 will return current week only
+Weeks = N
+Label = YOUR_LABEL
