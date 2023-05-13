@@ -1,3 +1,5 @@
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/plopcas/labelled-issues-jupyter/main?labpath=notebooks%2Flabelled-issues.ipynb)
+
 # Labelled issues
 
 This repository contains a Jupyter Notebook and Python Script that will allow you to:
