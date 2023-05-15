@@ -8,4 +8,3 @@ This repository contains a Jupyter Notebook and Python Script that will allow yo
 2. List out some data about each labelled issue, like Title, URL and person that labelled the issue.
 
 This is particularly useful if you use a specific label to triage issues e.g. "triaged". You can then see how many issues were triaged week on week and by whom.
-

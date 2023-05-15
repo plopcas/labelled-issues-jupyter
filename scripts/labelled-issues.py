@@ -8,11 +8,12 @@ def get_start_of_week():
     start_of_week = today - timedelta(days=today.weekday())
     return start_of_week.replace(hour=0, minute=0, second=0, microsecond=0)
 
-def get_total_issues(repo_owner, repo_name, access_token, label):
+def get_total_issues(repo_owner, repo_name, access_token, label, weeks):
     base_url = f"https://api.github.com/search/issues"
     headers = {"Authorization": f"token {access_token}"}
+    since_date = (datetime.now() - timedelta(weeks=weeks)).isoformat()
     params = {
-        "q": f"repo:{repo_owner}/{repo_name} label:{label} is:issue",
+        "q": f"repo:{repo_owner}/{repo_name} label:{label} is:issue updated:>={since_date}",  # updated since weeks ago
         "per_page": 1
     }
     try:
@@ -26,30 +27,25 @@ def get_total_issues(repo_owner, repo_name, access_token, label):
 def count_labelled_issues(repo_owner, repo_name, access_token, label, weeks):
     base_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/issues"
     headers = {"Authorization": f"token {access_token}"}
-    params = {
-        "state": "all",
-        "per_page": 100,
-        "labels": label
-    }
 
-    total_issues = get_total_issues(repo_owner, repo_name, access_token, label)
+    total_issues = get_total_issues(repo_owner, repo_name, access_token, label, weeks)
     print(f"Total issues to process: {total_issues}")
-
-    processed_issues = 0  # Counter for processed issues
-    processed_issue_numbers = set()  # Set to store processed issue numbers
-    matching_issues = 0  # Counter for matching issues
 
     for week in range(weeks + 1):  # Include the current incomplete week
         start_date = get_start_of_week() - timedelta(weeks=week)
         end_date = get_start_of_week() - timedelta(weeks=week-1) if week > 0 else datetime.now()
         if end_date != datetime.now():
-            end_date = end_date - timedelta(seconds=1) # Adjust end time to 23:59:59 of Sunday
+            end_date = end_date - timedelta(seconds=1)  # Adjust end time to 23:59:59 of Sunday
 
         labelled_issues = {}
-        closed_issues = 0
         issues_page = 1
-        processed_issues = 0  # Reset the processed_issues counter
-        matching_issues = 0 # Reset the matching_issues counter
+
+        params = {
+            "state": "all",
+            "per_page": 100,
+            "labels": label,
+            "since": (get_start_of_week() - timedelta(weeks=week)).isoformat()  # only issues updated since start of week
+        }
 
         while True:
             params["page"] = issues_page
@@ -60,26 +56,10 @@ def count_labelled_issues(repo_owner, repo_name, access_token, label, weeks):
             if not issues:
                 break
 
+            closed_issues = {}
+
             for issue in issues:
                 issue_number = issue['number']  # Get the issue number
-                if issue_number in processed_issue_numbers:  # Skip if issue has already been processed
-                    continue
-
-                processed_issue_numbers.add(issue_number)  # Add issue number to the processed set
-
-                processed_issues += 1 # Increment the counter for processed issues
-
-                if label in [label['name'] for label in issue['labels']]:
-                    matching_issues += 1  # Increment the counter for matching issues
-
-                # Use \r and \033[K to overwrite the entire line in the console
-                # This ensures that the new content replaces the previous content
-                print(f"\r\033[KProcessing issue {processed_issues}/{total_issues} (number {issue['number']})...", end="\r")
-
-
-                if issue['state'] == 'closed':
-                    closed_issues += 1
-                    continue
 
                 if label not in [label['name'] for label in issue['labels']]:
                     continue
@@ -106,24 +86,33 @@ def count_labelled_issues(repo_owner, repo_name, access_token, label, weeks):
                                     'user': event['actor']['login']
                                 }
                                 break
-                    events_page += 1
+                        elif event['event'] == 'closed':
+                            closed_at = datetime.strptime(issue['closed_at'], '%Y-%m-%dT%H:%M:%SZ')
+                            if start_date <= closed_at <= end_date:
+                                closed_issues[issue_number] = {
+                                    'title': issue['title'],
+                                    'url': issue['html_url'],
+                                    'closed_by': event['actor']['login']
+                                }
+                        
+                    events_page += 1                    
 
             issues_page += 1
 
-        print(f"\r\033[KProcessed {processed_issues}/{total_issues} issues ", end="\r")
-        print("\n")
-        print(Fore.GREEN + f"Week from {start_date.strftime('%A, %Y-%m-%d %H:%M:%S')} to {end_date.strftime('%A, %Y-%m-%d %H:%M:%S')}:" + Style.RESET_ALL)
+        print(Fore.YELLOW + f"Week from {start_date.strftime('%A, %Y-%m-%d %H:%M:%S')} to {end_date.strftime('%A, %Y-%m-%d %H:%M:%S')}:" + Style.RESET_ALL)
         print(Fore.YELLOW + "-" * 80)
-        print(Fore.GREEN + f"Number of issues labeled '{label}': {len(labelled_issues)} 📊")
+        print(Fore.GREEN + f"Number of issues labeled '{label}': {len(labelled_issues)}")
         for issue_number, issue_data in labelled_issues.items():
-            print(Fore.CYAN + f"Issue #{issue_number} - {issue_data['title']} 📝")
+            print(Fore.CYAN + f"🏷️ Issue #{issue_number} - {issue_data['title']}")
             print(Fore.BLUE + f"URL: {issue_data['url']} 🔗")
             print(Fore.MAGENTA + f"Labelled by: {issue_data['user']} 👤\n" + Style.RESET_ALL)
-
+        print(Fore.GREEN + f"Number of issues closed: {len(closed_issues)}")
+        for issue_number, issue_data in closed_issues.items():
+            print(Fore.CYAN + f"✅ Issue #{issue_number} - {issue_data['title']}")
+            print(Fore.BLUE + f"URL: {issue_data['url']} 🔗")
+            print(Fore.MAGENTA + f"Closed by: {issue_data['closed_by']} 👤\n" + Style.RESET_ALL)
         print(Fore.YELLOW + "-" * 80 + "\n" + Style.RESET_ALL)
-
-        # Update the total_issues count for the next iteration
-        total_issues -= matching_issues
+        print("\n")
 
 if __name__ == "__main__":
     config = configparser.ConfigParser()
