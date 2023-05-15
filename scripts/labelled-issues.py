@@ -83,7 +83,8 @@ def count_labelled_issues(repo_owner, repo_name, access_token, label, weeks):
                                 labelled_issues[issue['number']] = {
                                     'title': issue['title'],
                                     'url': issue['html_url'],
-                                    'user': event['actor']['login']
+                                    'user': event['actor']['login'],
+                                    'labelled_at': event["created_at"]  # save the time when the issue was labelled
                                 }
                                 break
                         elif event['event'] == 'closed' and issue['closed_at'] is not None:
@@ -92,7 +93,8 @@ def count_labelled_issues(repo_owner, repo_name, access_token, label, weeks):
                                 closed_issues[issue_number] = {
                                     'title': issue['title'],
                                     'url': issue['html_url'],
-                                    'closed_by': event['actor']['login']
+                                    'closed_by': event['actor']['login'],
+                                    'closed_at': issue['closed_at']  # save the time when the issue was closed
                                 }
                         
                     events_page += 1                    
@@ -105,12 +107,12 @@ def count_labelled_issues(repo_owner, repo_name, access_token, label, weeks):
         for issue_number, issue_data in labelled_issues.items():
             print(Fore.CYAN + f"🏷️ Issue #{issue_number} - {issue_data['title']}")
             print(Fore.BLUE + f"URL: {issue_data['url']} 🔗")
-            print(Fore.MAGENTA + f"Labelled by: {issue_data['user']} 👤\n" + Style.RESET_ALL)
+            print(Fore.MAGENTA + f"Labelled on {issue_data['labelled_at']} by {issue_data['user']} 👤\n" + Style.RESET_ALL)
         print(Fore.GREEN + f"Number of issues closed: {len(closed_issues)}")
         for issue_number, issue_data in closed_issues.items():
             print(Fore.CYAN + f"✅ Issue #{issue_number} - {issue_data['title']}")
             print(Fore.BLUE + f"URL: {issue_data['url']} 🔗")
-            print(Fore.MAGENTA + f"Closed by: {issue_data['closed_by']} 👤\n" + Style.RESET_ALL)
+            print(Fore.MAGENTA + f"Closed on {issue_data['closed_at']} by {issue_data['closed_by']} 👤\n" + Style.RESET_ALL)
         print(Fore.YELLOW + "-" * 80 + "\n" + Style.RESET_ALL)
         print("\n")
 
