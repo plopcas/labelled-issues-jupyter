@@ -86,7 +86,7 @@ def count_labelled_issues(repo_owner, repo_name, access_token, label, weeks):
                                     'user': event['actor']['login']
                                 }
                                 break
-                        elif event['event'] == 'closed':
+                        elif event['event'] == 'closed' and issue['closed_at'] is not None:
                             closed_at = datetime.strptime(issue['closed_at'], '%Y-%m-%dT%H:%M:%SZ')
                             if start_date <= closed_at <= end_date:
                                 closed_issues[issue_number] = {
