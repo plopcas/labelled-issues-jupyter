@@ -2,6 +2,7 @@ import requests
 from datetime import datetime, timedelta
 from colorama import Fore, Style
 import configparser
+from yaspin import yaspin
 
 def get_start_of_week():
     today = datetime.now()
@@ -29,11 +30,12 @@ def count_labelled_issues(repo_owner, repo_name, access_token, label, weeks):
     headers = {"Authorization": f"token {access_token}"}
 
     total_issues = get_total_issues(repo_owner, repo_name, access_token, label, weeks)
-    print(f"Total issues to process: {total_issues}")
+    print(f"Total issues to process: {total_issues}\n")
 
     for week in range(weeks + 1):  # Include the current incomplete week
-        start_date = get_start_of_week() - timedelta(weeks=week)
-        end_date = get_start_of_week() - timedelta(weeks=week-1) if week > 0 else datetime.now()
+        start_of_week = get_start_of_week();
+        start_date = start_of_week - timedelta(weeks=week)
+        end_date = start_of_week - timedelta(weeks=week-1) if week > 0 else datetime.now()
         if end_date != datetime.now():
             end_date = end_date - timedelta(seconds=1)  # Adjust end time to 23:59:59 of Sunday
 
@@ -44,7 +46,10 @@ def count_labelled_issues(repo_owner, repo_name, access_token, label, weeks):
             "state": "all",
             "per_page": 100,
             "labels": label,
-            "since": (get_start_of_week() - timedelta(weeks=week)).isoformat()  # only issues updated since start of week
+            "since": (start_of_week - timedelta(weeks=week)).isoformat()  # only issues updated since start of week
+            
+            # Note that there is no 'until' param available in the GitHub API as of May 2023, but if there was,
+            # we could use it here to reduce the amount of data we fetch from the issues API
         }
 
         while True:
@@ -127,6 +132,7 @@ if __name__ == "__main__":
         weeks = config.getint('DEFAULT', 'Weeks')
         label = config.get('DEFAULT', 'Label')
 
-        count_labelled_issues(repo_owner, repo_name, access_token, label, weeks)
+        with yaspin():
+            count_labelled_issues(repo_owner, repo_name, access_token, label, weeks)
     else:
         print("Unable to load configuration from config.ini")
